@@ -50,6 +50,11 @@ def main() -> int:
                  target / "docs", target / "specs" / "tasks"):
         keep.mkdir(parents=True, exist_ok=True)
         (keep / ".gitkeep").touch()
+    # Seed the human-tier docs from templates if missing.
+    for doc in ("overview.md", "changelog.md"):
+        dst = target / "docs" / doc
+        if not dst.exists():
+            shutil.copy2(DEVKIT / "templates" / doc, dst)
     print(f"installed {n} devkit files into {target}")
     print("next steps:")
     print("  1. commit the new files")

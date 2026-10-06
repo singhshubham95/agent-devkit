@@ -5,6 +5,11 @@ reviewer** pipelines, driven by detailed specs, with cheap models doing the
 coding. This repo is the canonical home of the methodology; each project
 holds only the project-specific parts (`specs/`, `docs/`, `board/`).
 
+**New here?** Read in this order: *The model* → *Bootstrap a new project*
+→ *Wiring per harness* → then the mechanics sections (chaining, issues,
+locks, enforcement). Agent role files are in `roles/`, ready-made
+templates in `templates/` (including `handoff.md`, the chaining contract).
+
 ## The model
 
 - **Human fans out** one pipeline per functional requirement. Agents never
@@ -88,6 +93,43 @@ python scripts/init.py --target /path/to/project
 Copies scripts + CI workflow + roles/templates/config, scaffolds
 `board/` and `docs/`. Re-run safe. Pin the devkit commit in
 `devkit.version` per project.
+
+## Bootstrap a new project (agent checklist)
+
+An agent setting this up in a fresh codebase, in order:
+
+1. `python scripts/init.py --target <project>` — installs scripts, CI
+   workflow, `.agent-devkit/` (roles, templates, config), scaffolds
+   `board/`, `docs/`, `specs/tasks/`.
+2. Adopt the project instruction file from
+   `templates/copilot-instructions.md` — copy into whichever file the
+   harness reads (`.github/copilot-instructions.md`, `CLAUDE.md`, or
+   `AGENTS.md`), adapting the project name.
+3. Seed `docs/overview.md` + `docs/changelog.md` from the templates (init
+   does this if they are missing) and fill in intent.
+4. Create the spec skeleton: numbered flat files in `specs/` (system map,
+   decisions log, milestones log, one file per component), using the
+   status markers and one-home-per-register rules from the instruction
+   file template. If specs already exist, keep their layout and add only
+   `specs/tasks/`.
+5. Record the devkit pin: `devkit.version` = the devkit commit hash.
+6. Commit. Then run pipelines per "The model" above.
+
+## Wiring per harness
+
+- **Copilot SDK (VS Code):** spawn each stage as a session whose prompt =
+  the handoff (from `templates/handoff.md`) + the role file text; pass the
+  role's model at session creation (`create_session`'s model parameter —
+  the chain sets it explicitly). Message the planner session URI
+  (`send_message`) for issues/approvals — that is the "resume" mechanism.
+- **Claude Code:** role files double as `.claude/agents/*.md` definitions;
+  set the model in each definition; `CLAUDE.md` = the instruction template;
+  a `PreToolUse` hook wrapping `scripts/path_guard.py` adds enforcement.
+- **Any harness with git (minimum viable):** paste the role file text into
+  each session prompt, run `claim.py`/`release.py`/`verify.py` manually at
+  the documented points, and rely on the `agent-gates` CI workflow for
+  permission enforcement. Branch prefixes (`plan/`, `impl/`, `review/`)
+  are the only contract the tooling needs.
 
 ## Design decisions (rationale lives with the decision)
 
